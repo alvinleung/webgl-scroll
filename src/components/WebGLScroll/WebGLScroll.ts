@@ -9,15 +9,103 @@ import {
 import EFFECT_FRAG from "./EffectGL.frag";
 //@ts-ignore
 import EFFECT_VERT from "./EffectGL.vert";
-import { proxy } from "valtio";
-import { virtualScrollState } from "./useVirtualScroll";
+import {
+  virtualScrollState,
+  virtualScrollItems,
+  Plane,
+} from "./useVirtualScroll";
+import { proxy, subscribe } from "valtio";
+import { watch } from "valtio/utils";
+
+let planesBufferInfo: twgl.BufferInfo[] = [];
 
 export function createWebGLScroll(canvas: HTMLCanvasElement) {
-  return createCanvasRenderer({
+  const { gl, cleanup } = createCanvasRenderer({
     canvas,
     init,
     update,
-  }).cleanup;
+  });
+
+  const updatePlanesBuffer = () => {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    function mapToNDCTopLeft(
+      plane: Plane,
+      screenWidth: number,
+      screenHeight: number
+    ) {
+      const { x, y, width, height } = plane;
+
+      // Convert the top-left corner to centered NDC coordinates
+      const ndcX = (x / screenWidth) * 2 - 1;
+      const ndcY = 1 - (y / screenHeight) * 2;
+
+      const ndcWidth = (width / screenWidth) * 2;
+      const ndcHeight = (height / screenHeight) * 2;
+
+      return {
+        ndcX,
+        ndcY,
+        ndcWidth,
+        ndcHeight,
+      };
+    }
+
+    planesBufferInfo = virtualScrollItems.items.map((plane, index) => {
+      const { ndcX, ndcY, ndcWidth, ndcHeight } = mapToNDCTopLeft(
+        plane,
+        windowWidth,
+        windowHeight
+      );
+
+      // console.log(plane);
+      const leftEdge = ndcX;
+      const rightEdge = ndcX + ndcWidth;
+      const topEdge = ndcY;
+      const bottomEdge = ndcY - ndcHeight;
+
+      const width = plane.width / windowWidth;
+      const height = plane.width / windowHeight;
+
+      const arr = {
+        a_position: [
+          leftEdge,
+          topEdge,
+          0,
+          rightEdge,
+          topEdge,
+          0,
+          leftEdge,
+          bottomEdge,
+          0,
+          leftEdge,
+          bottomEdge,
+          0,
+          rightEdge,
+          topEdge,
+          0,
+          rightEdge,
+          bottomEdge,
+          0,
+        ],
+      };
+
+      if (index % 2 === 1) {
+        return twgl.createBufferInfoFromArrays(gl, arr);
+      }
+      // console.log(arr);
+      return twgl.createBufferInfoFromArrays(gl, { a_position: [0, 0, 0] });
+    });
+  };
+
+  const unsubscribe = subscribe(virtualScrollItems.items, updatePlanesBuffer);
+  updatePlanesBuffer(); // first render
+
+  return () => {
+    unsubscribe();
+    cleanup();
+  };
 }
 
 // ================================================================
@@ -55,7 +143,11 @@ const update: UpdateFunction<typeof init> = (renderer, frame, programState) => {
   };
 
   gl.useProgram(programInfo.program);
-  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-  twgl.setUniforms(programInfo, uniforms);
-  twgl.drawBufferInfo(gl, bufferInfo);
+
+  const allBuffers = planesBufferInfo;
+  for (let i = 0; i < allBuffers.length; i++) {
+    twgl.setBuffersAndAttributes(gl, programInfo, allBuffers[i]);
+    twgl.setUniforms(programInfo, uniforms);
+    twgl.drawBufferInfo(gl, allBuffers[i]);
+  }
 };
