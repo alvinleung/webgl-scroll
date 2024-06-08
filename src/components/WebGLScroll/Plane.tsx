@@ -12,7 +12,7 @@ const Plane = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) => {
   const itemRef = useRef() as RefObject<HTMLDivElement>;
-  const { width } = useWindowSize();
+  const { width, height } = useWindowSize();
   useEffect(() => {
     const bounds = itemRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -29,7 +29,7 @@ const Plane = ({
     return () => {
       delete virtualScrollItems[hash];
     };
-  }, [width]);
+  }, [width, height]);
 
   return (
     <div ref={itemRef} {...props}>
