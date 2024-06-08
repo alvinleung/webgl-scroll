@@ -1,61 +1,42 @@
 "use client";
 
+import Plane from "@/components/WebGLScroll/Plane";
 import WebGLScrollContext from "@/components/WebGLScroll/WebGLScrollContext";
 import { virtualScrollItems } from "@/components/WebGLScroll/useVirtualScroll";
 import { RefObject, useEffect, useRef } from "react";
 import { useWindowSize } from "usehooks-ts";
+import { snapshot } from "valtio";
 
 export default function Home() {
   return (
     <main className="">
       <WebGLScrollContext>
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
-        <ScrollItem />
+        <div className="h-24 text-xl">hello</div>
+        <Plane>test</Plane>
+
+        <div className="flex flex-row">
+          <div>fdsa</div>
+          <Plane>
+            <div>fds fdsafdasa</div>
+          </Plane>
+        </div>
+
+        <Plane className="h-fit w-fit">
+          <div className="p-24">fdsajfdksla</div>
+        </Plane>
+        <Plane className="h-fit w-fit">
+          <div className="p-24">fdsajfdk fdsasla</div>
+        </Plane>
+        <div className="flex flex-row items-end justify-end">
+          <Plane className="h-fit w-fit p-8">Flex box right</Plane>
+        </div>
+        <Plane className="h-fit w-fit">
+          <div className="p-24">Item left</div>
+        </Plane>
+        <div className="flex flex-row items-end justify-end p-24">
+          <Plane className="h-fit w-fit p-8">Flex box right</Plane>
+        </div>
       </WebGLScrollContext>
     </main>
   );
 }
-
-const ScrollItem = () => {
-  const itemRef = useRef() as RefObject<HTMLDivElement>;
-  const { width } = useWindowSize();
-  useEffect(() => {
-    const bounds = itemRef.current?.getBoundingClientRect();
-    if (!bounds) return;
-
-    const plane = {
-      width: bounds.width,
-      height: bounds.height,
-      x: bounds.x,
-      y: bounds.y,
-    };
-    virtualScrollItems.items = [...virtualScrollItems.items, plane];
-
-    return () => {
-      // remove the associated plane from the array
-      // note: this remove method has O(n) complexity when removing element
-      const index = virtualScrollItems.items.findIndex(
-        (planeInArr) => planeInArr === plane
-      );
-      virtualScrollItems.items.splice(index, 1);
-    };
-  }, [width]);
-
-  return (
-    <div className="h-24" ref={itemRef}>
-      test
-    </div>
-  );
-};

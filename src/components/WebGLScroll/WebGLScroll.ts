@@ -42,6 +42,7 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
       const ndcY = 1 - (y / screenHeight) * 2;
 
       const ndcWidth = (width / screenWidth) * 2;
+
       const ndcHeight = (height / screenHeight) * 2;
 
       return {
@@ -52,7 +53,7 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
       };
     }
 
-    planesBufferInfo = virtualScrollItems.items.map((plane, index) => {
+    planesBufferInfo = Object.values(virtualScrollItems).map((plane, index) => {
       const { ndcX, ndcY, ndcWidth, ndcHeight } = mapToNDCTopLeft(
         plane,
         windowWidth,
@@ -65,8 +66,8 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
       const topEdge = ndcY;
       const bottomEdge = ndcY - ndcHeight;
 
-      const width = plane.width / windowWidth;
-      const height = plane.width / windowHeight;
+      // const width = plane.width / windowWidth;
+      // const height = plane.width / windowHeight;
 
       const arr = {
         a_position: [
@@ -91,15 +92,15 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
         ],
       };
 
-      if (index % 2 === 1) {
-        return twgl.createBufferInfoFromArrays(gl, arr);
-      }
+      // if (index % 2 === 1) {
+      return twgl.createBufferInfoFromArrays(gl, arr);
+      // }
       // console.log(arr);
-      return twgl.createBufferInfoFromArrays(gl, { a_position: [0, 0, 0] });
+      // return twgl.createBufferInfoFromArrays(gl, { a_position: [0, 0, 0] });
     });
   };
 
-  const unsubscribe = subscribe(virtualScrollItems.items, updatePlanesBuffer);
+  const unsubscribe = subscribe(virtualScrollItems, updatePlanesBuffer);
   updatePlanesBuffer(); // first render
 
   return () => {

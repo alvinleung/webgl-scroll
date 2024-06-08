@@ -15,9 +15,10 @@ export interface Plane {
   height: number;
 }
 
-export const virtualScrollItems = proxy({
-  items: [] as Plane[],
-});
+interface ScrollItems {
+  [key: string]: Plane;
+}
+export const virtualScrollItems = proxy<ScrollItems>({});
 
 export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
   const { height: pageHeight } = useResizeObserver({ ref: contentRef });

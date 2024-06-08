@@ -15,5 +15,5 @@ uniform sampler2D tex0;
 
 void main() {
     vec2 coord = (gl_FragCoord.xy / u_resolution.xy); 
-    gl_FragColor = vec4(0, coord.x * (sin(u_time *.002 +coord.y) + 1.0),0,1.0);
+    gl_FragColor = vec4(0, coord.x * (sin(u_time *.002 +coord.y) + 1.1),0,1.0);
 }
