@@ -4,8 +4,19 @@ export default function Home() {
   return (
     <main className="">
       <WebGLScrollContext>
-        <div>test</div>
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
+        <ScrollItem />
       </WebGLScrollContext>
     </main>
   );
 }
+
+const ScrollItem = () => {
+  return <div className="h-24">test</div>;
+};
