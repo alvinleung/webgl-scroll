@@ -2,7 +2,7 @@
 
 import React, { RefObject, useEffect, useRef } from "react";
 import { useWindowSize } from "usehooks-ts";
-import { virtualScrollItems } from "./useVirtualScroll";
+import { virtualScrollItems, virtualScrollState } from "./useVirtualScroll";
 import { snapshot } from "valtio";
 
 type Props = {};
@@ -21,7 +21,7 @@ const Plane = ({
       width: bounds.width,
       height: bounds.height,
       x: bounds.x,
-      y: bounds.y,
+      y: bounds.y - virtualScrollState.current,
     };
     const hash = `${plane.x}${plane.y}${plane.width}${plane.height}${Math.random}`;
     virtualScrollItems[hash] = plane;
