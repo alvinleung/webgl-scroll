@@ -1,6 +1,6 @@
 import { RefObject, useEffect, useMemo } from "react";
 import { clamp } from "./utils/clamp";
-import { proxy } from "valtio";
+import { proxy, subscribe } from "valtio";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 
 export const virtualScrollState = proxy({
@@ -41,9 +41,6 @@ export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
         (virtualScrollState.target - virtualScrollState.current) * lerp;
 
       virtualScrollState.current = newOffset;
-
-      if (contentRef.current)
-        contentRef.current.style.transform = `translateY(${virtualScrollState.current}px)`;
 
       scrollAnimFrame = requestAnimationFrame(updateVirtualScrollState);
     }

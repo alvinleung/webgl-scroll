@@ -15,11 +15,14 @@ import {
   Plane,
 } from "./useVirtualScroll";
 import { proxy, subscribe } from "valtio";
-import { watch } from "valtio/utils";
 
 let planesBufferInfo: twgl.BufferInfo[] = [];
 
-export function createWebGLScroll(canvas: HTMLCanvasElement) {
+export function createWebGLScroll(
+  canvas: HTMLCanvasElement,
+  content: HTMLDivElement
+) {
+  const init = createInitFunction({ contentElm: content });
   const { gl, cleanup } = createCanvasRenderer({
     canvas,
     init,
@@ -100,11 +103,14 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
     });
   };
 
-  const unsubscribe = subscribe(virtualScrollItems, updatePlanesBuffer);
+  const unsubscribeScrollItems = subscribe(
+    virtualScrollItems,
+    updatePlanesBuffer
+  );
   updatePlanesBuffer(); // first render
 
   return () => {
-    unsubscribe();
+    unsubscribeScrollItems();
     cleanup();
   };
 }
@@ -112,27 +118,31 @@ export function createWebGLScroll(canvas: HTMLCanvasElement) {
 // ================================================================
 // init function
 // ================================================================
-const init = async ({ gl, canvas }: CanvasRenderer) => {
-  // init webgl
-  const program = twgl.createProgramFromSources(gl, [EFFECT_VERT, EFFECT_FRAG]);
-  const programInfo = twgl.createProgramInfoFromProgram(gl, program);
+const createInitFunction = ({ contentElm }: { contentElm: HTMLDivElement }) => {
+  // retrun a create function so that the user can inject params here
+  return async ({ gl, canvas }: CanvasRenderer) => {
+    // init webgl
+    const program = twgl.createProgramFromSources(gl, [
+      EFFECT_VERT,
+      EFFECT_FRAG,
+    ]);
+    const programInfo = twgl.createProgramInfoFromProgram(gl, program);
 
-  const arrays = {
-    a_position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+    return { programInfo, contentElm };
   };
-
-  const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
-
-  return { programInfo, bufferInfo, arrays };
 };
 
 // ================================================================
 // update function
 // ================================================================
-const update: UpdateFunction<typeof init> = (renderer, frame, programState) => {
+const update: UpdateFunction<ReturnType<typeof createInitFunction>> = (
+  renderer,
+  frame,
+  programState
+) => {
   const { gl, canvas } = renderer;
   const { elapsed, delta } = frame;
-  const { programInfo, bufferInfo } = programState;
+  const { programInfo, contentElm } = programState;
 
   gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -151,4 +161,7 @@ const update: UpdateFunction<typeof init> = (renderer, frame, programState) => {
     twgl.setUniforms(programInfo, uniforms);
     twgl.drawBufferInfo(gl, allBuffers[i]);
   }
+
+  if (contentElm)
+    contentElm.style.transform = `translateY(${virtualScrollState.current}px)`;
 };

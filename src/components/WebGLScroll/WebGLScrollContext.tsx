@@ -20,13 +20,14 @@ const WebGLScrollContext = ({ children }: Props) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const content = contentRef.current;
+    if (!canvas || !content) return;
 
-    const cleanup = createWebGLScroll(canvas);
+    const cleanup = createWebGLScroll(canvas, content);
     return () => {
       cleanup();
     };
-  }, [canvasRef]);
+  }, [canvasRef, contentRef]);
 
   return (
     <>
