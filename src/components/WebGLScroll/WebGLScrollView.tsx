@@ -9,17 +9,19 @@ const WebGLScrollView = ({ children }: React.PropsWithChildren) => {
   const contentRef = useRef() as RefObject<HTMLDivElement>;
   return (
     <VirtualScrollProvider contentRef={contentRef}>
-      <ScrollingCanvas contentRef={contentRef}>{children}</ScrollingCanvas>
+      <WebGLScrollCanvas contentRef={contentRef} />
+      <div className="fixed w-screen h-svh inset-0 touch-none">
+        <div ref={contentRef}>{children}</div>
+      </div>
     </VirtualScrollProvider>
   );
 };
 
-const ScrollingCanvas = ({
+const WebGLScrollCanvas = ({
   contentRef,
-  children,
-}: React.PropsWithChildren<{
+}: {
   contentRef: RefObject<HTMLDivElement>;
-}>) => {
+}) => {
   const canvasRef = useRef() as RefObject<HTMLCanvasElement>;
   const { width, height } = useWindowSize({ initializeWithValue: false });
   const { items, scroll } = useVirtualScroll();
@@ -41,17 +43,12 @@ const ScrollingCanvas = ({
   }, [canvasRef, contentRef, scroll, items]);
 
   return (
-    <>
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="fixed w-screen h-svh inset-0"
-      />
-      <div className="fixed w-screen h-svh inset-0 touch-none">
-        <div ref={contentRef}>{children}</div>
-      </div>
-    </>
+    <canvas
+      ref={canvasRef}
+      width={width}
+      height={height}
+      className="fixed w-screen h-svh inset-0"
+    />
   );
 };
 
