@@ -1,16 +1,12 @@
 "use client";
 
 import Plane from "@/components/WebGLScroll/Plane";
-import WebGLScrollContext from "@/components/WebGLScroll/WebGLScrollContext";
-import { virtualScrollItems } from "@/components/WebGLScroll/useVirtualScroll";
-import { RefObject, useEffect, useRef } from "react";
-import { useWindowSize } from "usehooks-ts";
-import { snapshot } from "valtio";
+import WebGLScrollView from "@/components/WebGLScroll/WebGLScrollView";
 
 export default function Home() {
   return (
     <main className="">
-      <WebGLScrollContext>
+      <WebGLScrollView>
         <div className="h-24 text-xl">hello</div>
         <Plane>test</Plane>
 
@@ -36,7 +32,7 @@ export default function Home() {
         <div className="flex flex-row items-end justify-end p-24">
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>
         </div>
-      </WebGLScrollContext>
+      </WebGLScrollView>
     </main>
   );
 }

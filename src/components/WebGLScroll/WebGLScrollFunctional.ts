@@ -3,26 +3,35 @@ import {
   CanvasRenderer,
   UpdateFunction,
   createCanvasRenderer,
-} from "./rendering/WebGLRenderer";
+} from "./utils/WebGLRenderer";
 
 //@ts-ignore
-import EFFECT_FRAG from "./EffectGL.frag";
+import EFFECT_FRAG from "./shaders/EffectGL.frag";
 //@ts-ignore
-import EFFECT_VERT from "./EffectGL.vert";
-import {
-  virtualScrollState,
-  virtualScrollItems,
-  Plane,
-} from "./useVirtualScroll";
-import { proxy, subscribe } from "valtio";
+import EFFECT_VERT from "./shaders/EffectGL.vert";
+
+import { Plane, ScrollItems, ScrollState } from "./VirtualScroll";
+import { subscribe } from "valtio";
 
 let planesBufferInfo: twgl.BufferInfo[] = [];
 
-export function createWebGLScroll(
-  canvas: HTMLCanvasElement,
-  content: HTMLDivElement
-) {
-  const init = createInitFunction({ contentElm: content });
+interface WebGLScrollInfo {
+  canvas: HTMLCanvasElement;
+  content: HTMLDivElement;
+  items: ScrollItems;
+  scroll: ScrollState;
+}
+
+export function createWebGLScroll({
+  canvas,
+  content,
+  items,
+  scroll,
+}: WebGLScrollInfo) {
+  const init = createInitFunction({
+    contentElm: content,
+    virtualScrollState: scroll,
+  });
   const { gl, cleanup } = createCanvasRenderer({
     canvas,
     init,
@@ -56,7 +65,7 @@ export function createWebGLScroll(
       };
     }
 
-    planesBufferInfo = Object.values(virtualScrollItems).map((plane, index) => {
+    planesBufferInfo = Object.values(items).map((plane, index) => {
       const { ndcX, ndcY, ndcWidth, ndcHeight } = mapToNDCTopLeft(
         plane,
         windowWidth,
@@ -103,10 +112,7 @@ export function createWebGLScroll(
     });
   };
 
-  const unsubscribeScrollItems = subscribe(
-    virtualScrollItems,
-    updatePlanesBuffer
-  );
+  const unsubscribeScrollItems = subscribe(items, updatePlanesBuffer);
   updatePlanesBuffer(); // first render
 
   return () => {
@@ -118,7 +124,13 @@ export function createWebGLScroll(
 // ================================================================
 // init function
 // ================================================================
-const createInitFunction = ({ contentElm }: { contentElm: HTMLDivElement }) => {
+const createInitFunction = ({
+  contentElm,
+  virtualScrollState,
+}: {
+  contentElm: HTMLDivElement;
+  virtualScrollState: ScrollState;
+}) => {
   // retrun a create function so that the user can inject params here
   return async ({ gl, canvas }: CanvasRenderer) => {
     // init webgl
@@ -128,7 +140,7 @@ const createInitFunction = ({ contentElm }: { contentElm: HTMLDivElement }) => {
     ]);
     const programInfo = twgl.createProgramInfoFromProgram(gl, program);
 
-    return { programInfo, contentElm };
+    return { programInfo, contentElm, virtualScrollState };
   };
 };
 
@@ -142,7 +154,7 @@ const update: UpdateFunction<ReturnType<typeof createInitFunction>> = (
 ) => {
   const { gl, canvas } = renderer;
   const { elapsed, delta } = frame;
-  const { programInfo, contentElm } = programState;
+  const { programInfo, contentElm, virtualScrollState } = programState;
 
   gl.viewport(0, 0, canvas.width, canvas.height);
 

@@ -1,12 +1,14 @@
-import { RefObject, useEffect, useMemo } from "react";
+import {
+  RefObject,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { clamp } from "./utils/clamp";
 import { proxy, subscribe } from "valtio";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
-
-export const virtualScrollState = proxy({
-  current: 0,
-  target: 0,
-});
 
 export interface Plane {
   x: number;
@@ -14,13 +16,37 @@ export interface Plane {
   width: number;
   height: number;
 }
-
-interface ScrollItems {
+export interface ScrollState {
+  current: number;
+  target: number;
+}
+export interface ScrollItems {
   [key: string]: Plane;
 }
-export const virtualScrollItems = proxy<ScrollItems>({});
 
-export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
+const VirtualScrollContext = createContext({
+  items: {} as ScrollItems,
+  scroll: { current: 0, target: 0 } as ScrollState,
+});
+
+export const useVirtualScroll = () => useContext(VirtualScrollContext);
+
+interface Props {
+  contentRef: RefObject<HTMLElement>;
+}
+
+export const VirtualScrollProvider = ({
+  contentRef,
+  children,
+}: React.PropsWithChildren<Props>) => {
+  const virtualScrollItems = useRef(proxy<ScrollItems>({})).current;
+  const virtualScrollState = useRef(
+    proxy<ScrollState>({
+      current: 0,
+      target: 0,
+    })
+  ).current;
+
   const { height: pageHeight } = useResizeObserver({ ref: contentRef });
   const { height: windowHeight } = useWindowSize({
     initializeWithValue: false,
@@ -48,7 +74,7 @@ export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
     return () => {
       cancelAnimationFrame(scrollAnimFrame);
     };
-  }, [contentRef, pageHeight, windowHeight]);
+  }, [contentRef, pageHeight, virtualScrollState, windowHeight]);
 
   // handle wheel input
   useEffect(() => {
@@ -62,7 +88,7 @@ export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
     return () => {
       window.removeEventListener("wheel", handleWheel);
     };
-  }, [maxScroll]);
+  }, [maxScroll, virtualScrollState]);
 
   useEffect(() => {
     let prevTouchPos = 0;
@@ -92,8 +118,16 @@ export function useVirtualScroll(contentRef: RefObject<HTMLElement>) {
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [maxScroll]);
+  }, [maxScroll, virtualScrollState]);
 
-  // handle touch input
-  useEffect(() => {});
-}
+  return (
+    <VirtualScrollContext.Provider
+      value={{
+        items: virtualScrollItems,
+        scroll: virtualScrollState,
+      }}
+    >
+      {children}
+    </VirtualScrollContext.Provider>
+  );
+};

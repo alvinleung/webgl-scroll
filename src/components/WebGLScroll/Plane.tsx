@@ -2,8 +2,8 @@
 
 import React, { RefObject, useEffect, useRef } from "react";
 import { useWindowSize } from "usehooks-ts";
-import { virtualScrollItems, virtualScrollState } from "./useVirtualScroll";
 import { snapshot } from "valtio";
+import { useVirtualScroll } from "./VirtualScroll";
 
 type Props = {};
 
@@ -13,6 +13,8 @@ const Plane = ({
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) => {
   const itemRef = useRef() as RefObject<HTMLDivElement>;
   const { width, height } = useWindowSize();
+  const { scroll, items } = useVirtualScroll();
+
   useEffect(() => {
     const bounds = itemRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -21,15 +23,15 @@ const Plane = ({
       width: bounds.width,
       height: bounds.height,
       x: bounds.x,
-      y: bounds.y - virtualScrollState.current,
+      y: bounds.y - scroll.current,
     };
     const hash = `${plane.x}${plane.y}${plane.width}${plane.height}${Math.random}`;
-    virtualScrollItems[hash] = plane;
+    items[hash] = plane;
 
     return () => {
-      delete virtualScrollItems[hash];
+      delete items[hash];
     };
-  }, [width, height]);
+  }, [width, height, scroll, items]);
 
   return (
     <div ref={itemRef} {...props}>
