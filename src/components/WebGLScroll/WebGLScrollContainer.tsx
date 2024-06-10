@@ -5,7 +5,7 @@ import { useWindowSize } from "usehooks-ts";
 import { VirtualScrollProvider, useVirtualScroll } from "./VirtualScroll";
 import { WebGLScroll } from "./WebGLScroll";
 
-const WebGLScrollView = ({ children }: React.PropsWithChildren) => {
+const WebGLScrollContainer = ({ children }: React.PropsWithChildren) => {
   const scrollContentRef = useRef() as RefObject<HTMLDivElement>;
   return (
     <VirtualScrollProvider contentRef={scrollContentRef}>
@@ -48,4 +48,4 @@ const WebGLScrollCanvas = ({
   );
 };
 
-export default WebGLScrollView;
+export default WebGLScrollContainer;

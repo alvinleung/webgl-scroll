@@ -1,12 +1,12 @@
 "use client";
 
 import Plane from "@/components/WebGLScroll/Plane";
-import WebGLScrollView from "@/components/WebGLScroll/WebGLScrollView";
+import WebGLScrollContainer from "@/components/WebGLScroll/WebGLScrollContainer";
 
 export default function Home() {
   return (
     <main className="">
-      <WebGLScrollView>
+      <WebGLScrollContainer>
         <div className="h-24 text-xl">hello</div>
         <Plane>test</Plane>
 
@@ -32,7 +32,7 @@ export default function Home() {
         <div className="flex flex-row items-end justify-end p-24">
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>
         </div>
-      </WebGLScrollView>
+      </WebGLScrollContainer>
     </main>
   );
 }
