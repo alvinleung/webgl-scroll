@@ -3,6 +3,11 @@ import { Plane, ScrollItems } from "./VirtualScroll";
 import { CleanupProtocol } from "./utils/CleanupProtocol";
 import * as twgl from "twgl.js";
 
+/**
+ * PlaneUpdater class acts as a glue between the valtio state
+ * which hold all the items and the actual WebGL rendering, it provide
+ * a list of renderable planes to the renderer.
+ */
 export class PlanesUpdater implements CleanupProtocol {
   private planesBufferInfo: twgl.BufferInfo[] = [];
   private unsubscribeScrollItems: Function;
