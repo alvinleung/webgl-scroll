@@ -3,15 +3,15 @@
 import React, { RefObject, useEffect, useRef } from "react";
 import { useWindowSize } from "usehooks-ts";
 import { VirtualScrollProvider, useVirtualScroll } from "./VirtualScroll";
-import { createWebGLScroll } from "./WebGLScrollFunctional";
+import { WebGLScroll } from "./WebGLScrollClass";
 
 const WebGLScrollView = ({ children }: React.PropsWithChildren) => {
-  const contentRef = useRef() as RefObject<HTMLDivElement>;
+  const scrollContentRef = useRef() as RefObject<HTMLDivElement>;
   return (
-    <VirtualScrollProvider contentRef={contentRef}>
-      <WebGLScrollCanvas contentRef={contentRef} />
+    <VirtualScrollProvider contentRef={scrollContentRef}>
+      <WebGLScrollCanvas contentRef={scrollContentRef} />
       <div className="fixed w-screen h-svh inset-0 touch-none">
-        <div ref={contentRef}>{children}</div>
+        <div ref={scrollContentRef}>{children}</div>
       </div>
     </VirtualScrollProvider>
   );
@@ -31,14 +31,10 @@ const WebGLScrollCanvas = ({
     const content = contentRef.current;
     if (!canvas || !content) return;
 
-    const cleanup = createWebGLScroll({
-      canvas,
-      content,
-      scroll,
-      items,
-    });
+    const webGLScroll = new WebGLScroll({ canvas, content, items, scroll });
+
     return () => {
-      cleanup();
+      webGLScroll.cleanup();
     };
   }, [canvasRef, contentRef, scroll, items]);
 

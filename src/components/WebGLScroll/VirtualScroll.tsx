@@ -7,7 +7,7 @@ import {
   useRef,
 } from "react";
 import { clamp } from "./utils/clamp";
-import { proxy, subscribe } from "valtio";
+import { proxy } from "valtio";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 
 export interface Plane {

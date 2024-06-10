@@ -1,103 +1,80 @@
-export interface CanvasRenderer {
-  canvas: HTMLCanvasElement;
-  gl: WebGLRenderingContext;
-  cleanup: () => void;
-}
+import { CleanupProtocol } from "./CleanupProtocol";
+
 export interface FrameInfo {
-  elapsed: number;
   delta: number;
-}
-
-export interface CanvasRendererConfig<T> {
+  elapsed: number;
+  gl: WebGLRenderingContext;
   canvas: HTMLCanvasElement;
-  init: (renderer: CanvasRenderer) => Promise<T>;
-  update: (renderer: CanvasRenderer, frameInfo: FrameInfo, params: T) => void;
 }
 
-export type PromiseReturnType<T> = T extends Promise<infer Return> ? Return : T;
-export type InitFunction = (renderer: CanvasRenderer) => Promise<any>;
-export type GetInitFunctionReturns<T extends InitFunction> = Awaited<
-  ReturnType<T>
->;
-export type UpdateFunction<T extends InitFunction> = (
-  canvasRenderer: CanvasRenderer,
-  frameInfo: FrameInfo,
-  params: GetInitFunctionReturns<T>
-) => void;
+export interface WebGLRendererDelegate {
+  onRender(frameInfo: FrameInfo): void;
+  onRendererWillInit(frameInfo: FrameInfo): Promise<any>;
+}
 
-export function createCanvasRenderer<T>({
-  canvas,
-  init,
-  update,
-}: CanvasRendererConfig<T>): CanvasRenderer {
-  const gl = canvas.getContext("webgl") as WebGLRenderingContext;
+export class WebGLRenderer implements CleanupProtocol {
+  private canvas: HTMLCanvasElement;
+  private gl: WebGLRenderingContext;
 
-  const renderer = {
-    cleanup,
-    canvas,
-    gl,
-  };
+  private shouldCanvasUpdate: boolean = false;
+  private lastFrameTime: number = Date.now();
 
-  let animFrame = 0;
-  let initialParams: GetInitFunctionReturns<typeof init>;
-  let isActive = true;
-  // init
-  let lastFrameTime = 0;
-  function updateFrame(currentFrameTime: number) {
-    if (!isActive) return;
+  private renderingDelegate: WebGLRendererDelegate;
+  private animFrame = 0;
+
+  constructor(delegate: WebGLRendererDelegate, canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    const gl = canvas.getContext("webgl") as WebGLRenderingContext;
+    if (!gl) throw "Cannot get webgl context";
+    this.gl = gl;
+    this.renderingDelegate = delegate;
+
+    // begin running the frame loop right after init
+    (async () => {
+      await this.renderingDelegate.onRendererWillInit({
+        delta: 0,
+        elapsed: 0,
+        gl: this.gl,
+        canvas: this.canvas,
+      });
+      this.shouldCanvasUpdate = true;
+      this.nextFrame();
+    }).bind(this)();
+  }
+
+  private updateFrame(currentFrameTime: number) {
+    if (!this.shouldCanvasUpdate) return;
 
     // calc the delta
-    const delta = currentFrameTime - lastFrameTime;
-    lastFrameTime = currentFrameTime;
-    const frameInfo = {
+    const delta = currentFrameTime - this.lastFrameTime;
+    this.lastFrameTime = currentFrameTime;
+
+    this.renderingDelegate.onRender({
       delta,
       elapsed: currentFrameTime,
-    };
-
-    // do webgl rendering stuff here
-    update(renderer, frameInfo, initialParams);
-    // renderer.context.restore();
-    animFrame = requestAnimationFrame(updateFrame);
+      gl: this.gl,
+      canvas: this.canvas,
+    });
+    this.nextFrame();
   }
 
-  async function initCanvas() {
-    initialParams = await init(renderer);
-    requestAnimationFrame(updateFrame);
-  }
-  initCanvas();
-
-  function cleanup() {
-    cancelAnimationFrame(animFrame);
+  public getWebGLContext() {
+    return this.gl;
   }
 
-  // function resumeUpdateFrame() {
-  //   if (isActive) return;
-  //   isActive = true;
-  //   requestAnimationFrame(updateFrame);
-  // }
-  // function puaseUpdateFrame() {
-  //   isActive = false;
-  // }
+  private nextFrame() {
+    this.animFrame = requestAnimationFrame(this.updateFrame.bind(this));
+  }
 
-  // // init intersection observer here
-  // let options = {
-  //   root: document.querySelector("#scrollArea"),
-  //   rootMargin: "0px",
-  //   threshold: [0, 1.0],
-  // };
+  public pause() {
+    this.shouldCanvasUpdate = false;
+  }
+  public resume() {
+    this.shouldCanvasUpdate = true;
+    this.nextFrame();
+  }
 
-  // let observer = new IntersectionObserver((e) => {
-  //   e.forEach((entry) => {
-  //     if (entry.isIntersecting) {
-  //       // console.log("in view");
-  //       resumeUpdateFrame();
-  //       return;
-  //     }
-  //     // console.log("exit view");
-  //     puaseUpdateFrame();
-  //   });
-  // }, options);
-  // observer.observe(canvas);
-
-  return renderer;
+  public cleanup(): void {
+    cancelAnimationFrame(this.animFrame);
+  }
 }

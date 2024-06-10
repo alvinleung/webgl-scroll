@@ -1,77 +1,63 @@
 import * as twgl from "twgl.js";
-import {
-  CanvasRenderer,
-  GetInitFunctionReturns,
-  InitFunction,
-  UpdateFunction,
-  createCanvasRenderer,
-} from "./utils/WebGLRenderer";
 
 //@ts-ignore
 import EFFECT_FRAG from "./shaders/EffectGL.frag";
 //@ts-ignore
 import EFFECT_VERT from "./shaders/EffectGL.vert";
+
 import { Plane, ScrollItems, ScrollState } from "./VirtualScroll";
+import {
+  FrameInfo,
+  WebGLRenderer,
+  WebGLRendererDelegate,
+} from "./utils/WebGLRenderer";
+import { CleanupProtocol } from "./utils/CleanupProtocol";
+import { PlanesUpdater } from "./PlanesUpdater";
 
-let planesBufferInfo: twgl.BufferInfo[] = [];
+interface WebGLScrollConfig {
+  canvas: HTMLCanvasElement;
+  content: HTMLDivElement;
+  items: ScrollItems;
+  scroll: ScrollState;
+}
 
-export class WebGLScroll {
+export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
   private contentElm: HTMLDivElement;
-  private canvas: HTMLCanvasElement;
-  private rendererCleanup = () => {};
-
-  private items: ScrollItems;
   private scroll: ScrollState;
+  private webGLRenderer: WebGLRenderer;
+  private planesUpdater: PlanesUpdater;
+  private programInfo: twgl.ProgramInfo | undefined;
 
-  constructor({
-    content,
-    canvas,
-    items,
-    scroll,
-  }: {
-    canvas: HTMLCanvasElement;
-    content: HTMLDivElement;
-    items: ScrollItems;
-    scroll: ScrollState;
-  }) {
+  constructor({ content, canvas, items, scroll }: WebGLScrollConfig) {
     this.contentElm = content;
-    this.canvas = canvas;
-    this.items = items;
     this.scroll = scroll;
 
-    const { cleanup } = createCanvasRenderer({
-      canvas,
-      init: this.init.bind(this),
-      update: this.update.bind(this),
+    this.webGLRenderer = new WebGLRenderer(this, canvas);
+    this.planesUpdater = new PlanesUpdater({
+      items,
+      gl: this.webGLRenderer.getWebGLContext(),
     });
-    this.rendererCleanup = cleanup;
   }
 
-  public cleanup() {
-    this.rendererCleanup();
+  cleanup(): void {
+    this.webGLRenderer.cleanup();
+    this.planesUpdater.cleanup();
   }
 
-  private init = async ({ gl, canvas }: CanvasRenderer) => {
+  async onRendererWillInit({ gl, canvas }: FrameInfo) {
     // init webgl
     const program = twgl.createProgramFromSources(gl, [
       EFFECT_VERT,
       EFFECT_FRAG,
     ]);
-    const programInfo = twgl.createProgramInfoFromProgram(gl, program);
+    this.programInfo = twgl.createProgramInfoFromProgram(gl, program);
+  }
 
-    return { programInfo };
-  };
-
-  private update: UpdateFunction<typeof this.init> = (
-    renderer,
-    frame,
-    programState
-  ) => {
-    const { gl, canvas } = renderer;
-    const { elapsed, delta } = frame;
-    const { programInfo } = programState;
-
+  onRender({ gl, canvas, elapsed, delta }: FrameInfo): void {
     gl.viewport(0, 0, canvas.width, canvas.height);
+
+    const programInfo = this.programInfo;
+    if (!programInfo) throw "Program info not found during render loop.";
 
     const uniforms = {
       u_resolution: [canvas.width, canvas.height],
@@ -82,7 +68,8 @@ export class WebGLScroll {
 
     gl.useProgram(programInfo.program);
     // render planes onto the webgl canvas
-    const allBuffers = planesBufferInfo;
+    const allBuffers = this.planesUpdater.getPlanesBufferInfo();
+
     for (let i = 0; i < allBuffers.length; i++) {
       twgl.setBuffersAndAttributes(gl, programInfo, allBuffers[i]);
       twgl.setUniforms(programInfo, uniforms);
@@ -92,5 +79,5 @@ export class WebGLScroll {
     // update dom scroll after webgl
     if (this.contentElm)
       this.contentElm.style.transform = `translateY(${this.scroll.current}px)`;
-  };
+  }
 }

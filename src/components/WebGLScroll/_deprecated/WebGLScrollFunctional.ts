@@ -3,14 +3,14 @@ import {
   CanvasRenderer,
   UpdateFunction,
   createCanvasRenderer,
-} from "./utils/WebGLRenderer";
+} from "./WebGLRendererFunctional";
 
 //@ts-ignore
 import EFFECT_FRAG from "./shaders/EffectGL.frag";
 //@ts-ignore
 import EFFECT_VERT from "./shaders/EffectGL.vert";
 
-import { Plane, ScrollItems, ScrollState } from "./VirtualScroll";
+import { Plane, ScrollItems, ScrollState } from "../VirtualScroll";
 import { subscribe } from "valtio";
 
 let planesBufferInfo: twgl.BufferInfo[] = [];
