@@ -11,7 +11,9 @@ export interface WebGLRendererDelegate {
   onRender(frameInfo: FrameInfo): void;
   onRendererWillInit(frameInfo: FrameInfo): Promise<any>;
 }
-
+/**
+ * A object that handle the render loop and provide webgl context
+ */
 export class WebGLRenderer implements CleanupProtocol {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;

@@ -20,7 +20,9 @@ interface WebGLScrollConfig {
   items: ScrollItems;
   scroll: ScrollState;
 }
-
+/**
+ * The main entry point of the program
+ */
 export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
   private contentElm: HTMLDivElement;
   private scroll: ScrollState;
@@ -54,6 +56,7 @@ export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
   }
 
   onRender({ gl, canvas, elapsed, delta }: FrameInfo): void {
+    // Step 1 - Render webgl on the background canvas
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     const programInfo = this.programInfo;
@@ -67,16 +70,18 @@ export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
     };
 
     gl.useProgram(programInfo.program);
+
     // render planes onto the webgl canvas
     const allBuffers = this.planesUpdater.getPlanesBufferInfo();
-
     for (let i = 0; i < allBuffers.length; i++) {
       twgl.setBuffersAndAttributes(gl, programInfo, allBuffers[i]);
       twgl.setUniforms(programInfo, uniforms);
       twgl.drawBufferInfo(gl, allBuffers[i]);
     }
 
-    // update dom scroll after webgl
+    // Step 2 - Update DOM scroll offset
+    // It is necessary to follow dom update with webgl update in the same
+    // requestAnimationFrame call. Or else the position will be out of sync.
     if (this.contentElm)
       this.contentElm.style.transform = `translateY(${this.scroll.current}px)`;
   }
