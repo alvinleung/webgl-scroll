@@ -5,8 +5,8 @@ import WebGLScrollContainer from "@/components/WebGLScroll/WebGLScrollContainer"
 
 export default function Home() {
   return (
-    <main className="">
-      <WebGLScrollContainer>
+    <WebGLScrollContainer>
+      <main className="">
         <div className="h-24 text-xl">hello</div>
         <Plane>test</Plane>
 
@@ -27,12 +27,21 @@ export default function Home() {
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>
         </div>
         <Plane className="h-fit w-fit">
-          <div className="p-24">Item left</div>
+          <div className="p-24 border border-red-900">Item left</div>
         </Plane>
         <div className="flex flex-row items-end justify-end p-24">
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>
         </div>
-      </WebGLScrollContainer>
-    </main>
+
+        <div className="flex flex-row items-center w-full h-screen justify-end p-24">
+          <Plane className="h-fit w-fit p-8 border border-white">
+            Flex box right
+          </Plane>
+        </div>
+        <Plane className="flex flex-row items-center w-full h-screen justify-end p-24">
+          Full screen
+        </Plane>
+      </main>
+    </WebGLScrollContainer>
   );
 }
