@@ -1,3 +1,5 @@
+const ignoredList = require("./cleanup-ignore-list");
+
 module.exports = {
   meta: {
     type: "suggestion",
@@ -7,12 +9,13 @@ module.exports = {
     schema: [], // No options
   },
   create(context) {
-    const sourceCode = context.sourceCode;
-
     return {
-      NewExpression: function (node) {
+      // capture new expression nodes when encounters one
+      NewExpression(node) {
         const parentNode = node.parent;
+
         if (
+          parentNode.type !== "PropertyDefinition" &&
           parentNode.type !== "AssignmentExpression" &&
           parentNode.type !== "VariableDeclarator"
         ) {
@@ -26,12 +29,26 @@ module.exports = {
           return;
         }
 
+        // check the ignored list, if its belongs there, just ignore the operations
+        const instanceClassName = node.callee.name;
+        const isClassBelongToIngoredList = ignoredList.classes.some(
+          (className) => className === instanceClassName
+        );
+        if (isClassBelongToIngoredList) return;
+
+        // obtain the variable reference name
         const instanceName = (() => {
           // it is a local variable
           // eg: const myObject = new Object();
           if (parentNode.type === "VariableDeclarator") {
             return parentNode.id.name;
           }
+
+          // this is defined as property
+          if (parentNode.type === "PropertyDefinition") {
+            return parentNode.key.name;
+          }
+          console.log(parentNode);
 
           const leftOfAssignment = parentNode.left;
           if (leftOfAssignment.type !== "MemberExpression") {
@@ -62,10 +79,15 @@ module.exports = {
         }
 
         // step - 2:  check if cleanup code exist in class
-        const hasCleanupCodeInClass = findCleanupInClass(
+        // const hasCleanupCodeInClass = findCleanupInClass(
+        //   parentClassNode,
+        //   instanceName
+        // );
+        const hasCleanupCodeInClass = findCleanupNodeRecursive(
           parentClassNode,
           instanceName
         );
+
         if (hasCleanupCodeInClass) return;
         context.report({
           node: node,
@@ -108,16 +130,8 @@ function findParentFunctionNode(node) {
   return null;
 }
 
-function findCleanupInClass(classNode, instanceName = "") {
-  const classBody = classNode.body.body;
-
-  return classBody.some((node) => {
-    if (node.type !== "MethodDefinition") return false;
-    return findCleanupNodeRecursive(node.value.body, instanceName);
-  });
-}
-
 function findCleanupNodeRecursive(node, instanceName) {
+  if (!node) return false;
   if (node.type === "CallExpression") {
     // THIS IS THE EXIT CONDITION, WE FOUND THE "CALL", but we are not sure which
     // the node is now called
@@ -136,6 +150,10 @@ function findCleanupNodeRecursive(node, instanceName) {
       isCleanupFunctionCalled &&
       (isCleanupCalledFromThisExpression || isCleanupCalledFromVar)
     );
+  }
+
+  if (node.type === "MethodDefinition") {
+    return findCleanupNodeRecursive(node.value.body, instanceName);
   }
 
   if (node.type === "ReturnStatement") {
