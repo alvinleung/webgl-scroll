@@ -13,19 +13,20 @@ import {
 } from "./utils/WebGLRenderer";
 import { CleanupProtocol } from "./utils/CleanupProtocol";
 import { PlanesUpdater } from "./PlanesUpdater";
+import { AnimatedValue } from "./AnimatedValue/AnimatedValue";
 
 interface WebGLScrollConfig {
   canvas: HTMLCanvasElement;
   content: HTMLDivElement;
   items: ScrollItems;
-  scroll: ScrollState;
+  scroll: AnimatedValue;
 }
 /**
  * The main entry point of the program
  */
 export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
   private contentElm: HTMLDivElement;
-  private scroll: ScrollState;
+  private scroll: AnimatedValue;
   private webGLRenderer: WebGLRenderer;
   private planesUpdater: PlanesUpdater;
   private programInfo: twgl.ProgramInfo | undefined;
@@ -66,7 +67,7 @@ export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
       u_resolution: [canvas.width, canvas.height],
       u_delta: delta,
       u_time: elapsed,
-      u_scroll: this.scroll.current,
+      u_scroll: this.scroll.getCurrent(),
     };
 
     gl.useProgram(programInfo.program);
@@ -83,6 +84,6 @@ export class WebGLScroll implements WebGLRendererDelegate, CleanupProtocol {
     // It is necessary to follow dom update with webgl update in the same
     // requestAnimationFrame call. Or else the position will be out of sync.
     if (this.contentElm)
-      this.contentElm.style.transform = `translateY(${this.scroll.current}px)`;
+      this.contentElm.style.transform = `translateY(${this.scroll.getCurrent()}px)`;
   }
 }

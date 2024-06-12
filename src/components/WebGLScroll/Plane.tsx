@@ -23,7 +23,7 @@ const Plane = ({
       width: bounds.width,
       height: bounds.height,
       x: bounds.x,
-      y: bounds.y - scroll.current,
+      y: bounds.y - scroll.getCurrent(),
     };
     const hash = `${plane.x}${plane.y}${plane.width}${plane.height}${Math.random}`;
     items[hash] = plane;

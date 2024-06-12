@@ -32,7 +32,6 @@ const WebGLScrollCanvas = ({
     if (!canvas || !content) return;
 
     const webGLScroll = new WebGLScroll({ canvas, content, items, scroll });
-
     return () => {
       webGLScroll.cleanup();
     };

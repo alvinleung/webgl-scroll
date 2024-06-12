@@ -26,7 +26,7 @@ export default function Home() {
         <div className="flex flex-row items-end justify-end">
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>
         </div>
-        <Plane className="h-fit w-fit">
+        <Plane className="h-fit w-1/2">
           <div className="p-24 border border-red-900">Item left</div>
         </Plane>
         <div className="flex flex-row items-end justify-end p-24">

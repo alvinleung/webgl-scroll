@@ -9,6 +9,8 @@ import {
 import { clamp } from "./utils/clamp";
 import { proxy } from "valtio";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
+import { AnimatedValue } from "./AnimatedValue/AnimatedValue";
+import { useAnimatedValue } from "./AnimatedValue/useAnimatedValue";
 
 export interface Plane {
   x: number;
@@ -26,7 +28,7 @@ export interface ScrollItems {
 
 const VirtualScrollContext = createContext({
   items: {} as ScrollItems,
-  scroll: { current: 0, target: 0 } as ScrollState,
+  scroll: AnimatedValue.empty,
 });
 
 export const useVirtualScroll = () => useContext(VirtualScrollContext);
@@ -40,12 +42,7 @@ export const VirtualScrollProvider = ({
   children,
 }: React.PropsWithChildren<Props>) => {
   const virtualScrollItems = useRef(proxy<ScrollItems>({})).current;
-  const virtualScrollState = useRef(
-    proxy<ScrollState>({
-      current: 0,
-      target: 0,
-    })
-  ).current;
+  const virtualScrollValue = useAnimatedValue();
 
   const { height: pageHeight } = useResizeObserver({ ref: contentRef });
   const { height: windowHeight } = useWindowSize({
@@ -57,57 +54,50 @@ export const VirtualScrollProvider = ({
     [pageHeight, windowHeight]
   );
 
-  // interpolate virtual scroll state
-  useEffect(() => {
-    let scrollAnimFrame = 0;
-    function updateVirtualScrollState() {
-      const lerp = 0.2;
-      const newOffset =
-        virtualScrollState.current +
-        (virtualScrollState.target - virtualScrollState.current) * lerp;
-
-      virtualScrollState.current = newOffset;
-
-      scrollAnimFrame = requestAnimationFrame(updateVirtualScrollState);
-    }
-    scrollAnimFrame = requestAnimationFrame(updateVirtualScrollState);
-    return () => {
-      cancelAnimationFrame(scrollAnimFrame);
-    };
-  }, [contentRef, pageHeight, virtualScrollState, windowHeight]);
-
   // handle wheel input
   useEffect(() => {
-    const MAX_DELTA = 30;
+    const MAX_DELTA = 100;
     const handleWheel = (e: WheelEvent) => {
       const delta = -clamp(e.deltaY, -MAX_DELTA, MAX_DELTA);
-      const newPos = virtualScrollState.target + delta;
-      virtualScrollState.target = clamp(newPos, -maxScroll, 0);
+      const newPos = virtualScrollValue.getTarget() + delta * 2;
+      const clampedPos = clamp(newPos, -maxScroll, 0);
+      virtualScrollValue.lerpTo(clampedPos, 0.24);
     };
     window.addEventListener("wheel", handleWheel);
     return () => {
       window.removeEventListener("wheel", handleWheel);
     };
-  }, [maxScroll, virtualScrollState]);
+  }, [maxScroll, virtualScrollValue]);
 
+  // handle touch input
   useEffect(() => {
-    let prevTouchPos = 0;
-    let touchDelta = 0;
-    function handleTouchStart(e: TouchEvent) {
-      prevTouchPos = e.touches[0].clientY;
-      touchDelta = 0;
-    }
-    function handleTouchEnd(e: TouchEvent) {}
-    function handleTouchMove(e: TouchEvent) {
-      // stop user from pulling refresh
+    if (!pageHeight || !windowHeight) return;
+
+    let initialTouchPos = 0;
+    let initialScrollOffset = 0;
+    const EXIT_VELOCITY_DAMPING = 0.14;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      initialTouchPos = e.touches[0].clientY;
+      initialScrollOffset = virtualScrollValue.getCurrent();
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      const flickVelocity = virtualScrollValue.getVelocity();
+      virtualScrollValue.launch(flickVelocity, EXIT_VELOCITY_DAMPING, {
+        min: -(pageHeight - windowHeight),
+        max: 0,
+      });
+    };
+    const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       const currTouchPos = e.touches[0].clientY;
-      touchDelta = currTouchPos - prevTouchPos;
-      const newPos = virtualScrollState.target + touchDelta;
-      virtualScrollState.target = clamp(newPos, -maxScroll, 0);
+      const touchOffset = initialTouchPos - currTouchPos;
+      const newPos = initialScrollOffset - touchOffset;
+      const clampedNewPos = clamp(newPos, -maxScroll, 0);
 
-      prevTouchPos = currTouchPos;
-    }
+      virtualScrollValue.lerpTo(clampedNewPos, 1);
+    };
 
     window.addEventListener("touchstart", handleTouchStart);
     window.addEventListener("touchmove", handleTouchMove);
@@ -118,13 +108,13 @@ export const VirtualScrollProvider = ({
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [maxScroll, virtualScrollState]);
+  }, [maxScroll, virtualScrollValue, pageHeight, windowHeight]);
 
   return (
     <VirtualScrollContext.Provider
       value={{
         items: virtualScrollItems,
-        scroll: virtualScrollState,
+        scroll: virtualScrollValue,
       }}
     >
       {children}

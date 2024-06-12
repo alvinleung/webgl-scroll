@@ -22,6 +22,7 @@ export class PlanesUpdater implements CleanupProtocol {
     const self = this;
 
     const updatePlanesBuffer = () => {
+      console.log("updating planes");
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
 
