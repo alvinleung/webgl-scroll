@@ -20,86 +20,86 @@ export class PlanesUpdater implements CleanupProtocol {
     items: ScrollItems;
     gl: WebGLRenderingContext;
   }) {
-    const self = this;
+    this.unsubscribeScrollItems = subscribe(
+      items,
+      (() => this.updatePlanesBuffer(gl, items)).bind(this)
+    );
+  }
 
-    const updatePlanesBuffer = () => {
-      // cleanup previous
-      this.planesBufferInfo.forEach((bufferInfo) => {
-        deleteTwglBufferInfo(gl, bufferInfo);
-      });
+  private updatePlanesBuffer(gl: WebGLRenderingContext, items: ScrollItems) {
+    // cleanup previous
+    this.planesBufferInfo.forEach((bufferInfo) => {
+      deleteTwglBufferInfo(gl, bufferInfo);
+    });
 
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
 
-      function mapToNDCTopLeft(
-        plane: Plane,
-        screenWidth: number,
-        screenHeight: number
-      ) {
-        const { x, y, width, height } = plane;
+    this.planesBufferInfo = Object.values(items).map((plane, index) => {
+      const { ndcX, ndcY, ndcWidth, ndcHeight } = this.mapToNDCTopLeft(
+        plane,
+        windowWidth,
+        windowHeight
+      );
 
-        // Convert the top-left corner to centered NDC coordinates
-        const ndcX = (x / screenWidth) * 2 - 1;
-        const ndcY = 1 - (y / screenHeight) * 2;
+      // console.log(plane);
+      const leftEdge = ndcX;
+      const rightEdge = ndcX + ndcWidth;
+      const topEdge = ndcY;
+      const bottomEdge = ndcY - ndcHeight;
 
-        const ndcWidth = (width / screenWidth) * 2;
+      // const width = plane.width / windowWidth;
+      // const height = plane.width / windowHeight;
 
-        const ndcHeight = (height / screenHeight) * 2;
+      const arr = {
+        a_position: [
+          leftEdge,
+          topEdge,
+          0,
+          rightEdge,
+          topEdge,
+          0,
+          leftEdge,
+          bottomEdge,
+          0,
+          leftEdge,
+          bottomEdge,
+          0,
+          rightEdge,
+          topEdge,
+          0,
+          rightEdge,
+          bottomEdge,
+          0,
+        ],
+      };
 
-        return {
-          ndcX,
-          ndcY,
-          ndcWidth,
-          ndcHeight,
-        };
-      }
+      //TODO: create cleanup for this function to avoid memory leak
+      return twgl.createBufferInfoFromArrays(gl, arr);
+    });
+  }
 
-      self.planesBufferInfo = Object.values(items).map((plane, index) => {
-        const { ndcX, ndcY, ndcWidth, ndcHeight } = mapToNDCTopLeft(
-          plane,
-          windowWidth,
-          windowHeight
-        );
+  private mapToNDCTopLeft(
+    plane: Plane,
+    screenWidth: number,
+    screenHeight: number
+  ) {
+    const { x, y, width, height } = plane;
 
-        // console.log(plane);
-        const leftEdge = ndcX;
-        const rightEdge = ndcX + ndcWidth;
-        const topEdge = ndcY;
-        const bottomEdge = ndcY - ndcHeight;
+    // Convert the top-left corner to centered NDC coordinates
+    const ndcX = (x / screenWidth) * 2 - 1;
+    const ndcY = 1 - (y / screenHeight) * 2;
 
-        // const width = plane.width / windowWidth;
-        // const height = plane.width / windowHeight;
+    const ndcWidth = (width / screenWidth) * 2;
 
-        const arr = {
-          a_position: [
-            leftEdge,
-            topEdge,
-            0,
-            rightEdge,
-            topEdge,
-            0,
-            leftEdge,
-            bottomEdge,
-            0,
-            leftEdge,
-            bottomEdge,
-            0,
-            rightEdge,
-            topEdge,
-            0,
-            rightEdge,
-            bottomEdge,
-            0,
-          ],
-        };
+    const ndcHeight = (height / screenHeight) * 2;
 
-        //TODO: create cleanup for this function to avoid memory leak
-        return twgl.createBufferInfoFromArrays(gl, arr);
-      });
+    return {
+      ndcX,
+      ndcY,
+      ndcWidth,
+      ndcHeight,
     };
-
-    this.unsubscribeScrollItems = subscribe(items, updatePlanesBuffer);
-    updatePlanesBuffer(); // first render
   }
 
   public getPlanesBufferInfo() {
