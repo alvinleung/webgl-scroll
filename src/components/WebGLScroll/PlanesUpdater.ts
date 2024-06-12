@@ -2,6 +2,7 @@ import { subscribe } from "valtio";
 import { Plane, ScrollItems } from "./VirtualScroll";
 import { CleanupProtocol } from "./utils/CleanupProtocol";
 import * as twgl from "twgl.js";
+import { deleteTwglBufferInfo } from "./utils/deleteTwglBufferInfo";
 
 /**
  * PlaneUpdater class acts as a glue between the valtio state
@@ -22,7 +23,11 @@ export class PlanesUpdater implements CleanupProtocol {
     const self = this;
 
     const updatePlanesBuffer = () => {
-      console.log("updating planes");
+      // cleanup previous
+      this.planesBufferInfo.forEach((bufferInfo) => {
+        deleteTwglBufferInfo(gl, bufferInfo);
+      });
+
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
 
@@ -88,11 +93,8 @@ export class PlanesUpdater implements CleanupProtocol {
           ],
         };
 
-        // if (index % 2 === 1) {
+        //TODO: create cleanup for this function to avoid memory leak
         return twgl.createBufferInfoFromArrays(gl, arr);
-        // }
-        // console.log(arr);
-        // return twgl.createBufferInfoFromArrays(gl, { a_position: [0, 0, 0] });
       });
     };
 
