@@ -4,11 +4,19 @@ import { CleanupProtocol } from "./utils/CleanupProtocol";
 import * as twgl from "twgl.js";
 import { deleteTwglBufferInfo } from "./utils/deleteTwglBufferInfo";
 import PlaneInfo from "./PlaneInfo";
+import ShaderProgram from "./rendering/shader/ShaderProgram";
+import { Texture } from "./rendering/texture/Texture";
 
 interface PlanesUpdaterConfig {
   items: ScrollItems;
   gl: WebGLRenderingContext;
 }
+
+type PlaneRenderInfo = {
+  buffer: twgl.BufferInfo;
+  shaderProgram: ShaderProgram;
+  uniforms: { [key: string]: any };
+};
 
 /**
  * PlaneUpdater class acts as a glue between the valtio state
@@ -28,7 +36,6 @@ export class PlanesUpdater implements CleanupProtocol {
       items,
       (() => this.updatePlanesBuffer(gl, items)).bind(this)
     );
-
     // trigger the initial update
     this.updatePlanesBuffer(gl, items);
   }
@@ -42,48 +49,51 @@ export class PlanesUpdater implements CleanupProtocol {
 
     this._planes = Object.values(items);
 
+    // create a quad
     this.planesBufferInfo = Object.values(items).map((plane, index) => {
-      const { ndcX, ndcY, ndcWidth, ndcHeight } = this.mapToNDCTopLeft(
-        plane,
-        windowWidth,
-        windowHeight
-      );
-
-      // console.log(plane);
-      const leftEdge = ndcX;
-      const rightEdge = ndcX + ndcWidth;
-      const topEdge = ndcY;
-      const bottomEdge = ndcY - ndcHeight;
-
-      // const width = plane.width / windowWidth;
-      // const height = plane.width / windowHeight;
-
-      const arr = {
-        a_position: [
-          leftEdge,
-          topEdge,
-          0,
-          rightEdge,
-          topEdge,
-          0,
-          leftEdge,
-          bottomEdge,
-          0,
-          leftEdge,
-          bottomEdge,
-          0,
-          rightEdge,
-          topEdge,
-          0,
-          rightEdge,
-          bottomEdge,
-          0,
-        ],
-      };
-
-      //TODO: create cleanup for this function to avoid memory leak
+      const arr = this.getQuadInNDC(plane, windowWidth, windowHeight);
       return twgl.createBufferInfoFromArrays(gl, arr);
     });
+  }
+
+  private getQuadInNDC(
+    plane: PlaneInfo,
+    windowWidth: number,
+    windowHeight: number
+  ) {
+    const { ndcX, ndcY, ndcWidth, ndcHeight } = this.mapToNDCTopLeft(
+      plane,
+      windowWidth,
+      windowHeight
+    );
+
+    const leftEdge = ndcX;
+    const rightEdge = ndcX + ndcWidth;
+    const topEdge = ndcY;
+    const bottomEdge = ndcY - ndcHeight;
+
+    return {
+      a_position: [
+        leftEdge,
+        topEdge,
+        0,
+        rightEdge,
+        topEdge,
+        0,
+        leftEdge,
+        bottomEdge,
+        0,
+        leftEdge,
+        bottomEdge,
+        0,
+        rightEdge,
+        topEdge,
+        0,
+        rightEdge,
+        bottomEdge,
+        0,
+      ],
+    };
   }
 
   private mapToNDCTopLeft(
@@ -116,12 +126,39 @@ export class PlanesUpdater implements CleanupProtocol {
     });
   }
 
-  public getPlanesBufferInfo() {
-    return this.planesBufferInfo;
+  public getPlaneRenderInfo(
+    gl: WebGLRenderingContext,
+    index: number
+  ): PlaneRenderInfo | null {
+    if (this._planes === undefined) return null;
+
+    const plane = this._planes[index];
+
+    const processedUniforms: { [key: string]: any } = {};
+    for (const uniformKey in plane.uniforms) {
+      const uniformValue = plane.uniforms[uniformKey];
+      const isUniformTexture = uniformValue instanceof Texture;
+      if (!isUniformTexture) {
+        processedUniforms[uniformKey] = uniformValue;
+        continue;
+      }
+      const tex = uniformValue.getTexture(gl);
+
+      if (!uniformValue.isTextureReady) {
+        processedUniforms[uniformKey] = Texture.empty.getTexture(gl);
+      }
+      processedUniforms[uniformKey] = tex;
+    }
+
+    return {
+      shaderProgram: plane.shaderProgram,
+      buffer: this.planesBufferInfo[index],
+      uniforms: processedUniforms,
+    };
   }
 
-  get planes() {
-    return this._planes;
+  get planesCount() {
+    return this._planes?.length || 0;
   }
 
   cleanup(): void {

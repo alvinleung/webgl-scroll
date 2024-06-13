@@ -7,6 +7,8 @@ precision mediump float;
 
 attribute vec4 a_position;
 uniform float u_scroll;
+uniform float u_scroll_velocity;
+uniform vec2 u_mouse;
 uniform vec2 u_resolution;
 uniform float u_time;
 
@@ -17,6 +19,7 @@ void main() {
 
   // need to multiply by 2 because screen space(pixel coord) to NDC(normalized device coord)
   vScroll = u_scroll * 2.0 / u_resolution.y;
+
   gl_Position = vec4(a_position.x, a_position.y - vScroll, a_position.z, a_position.w);
   vVertexPosition = a_position.xyz;
 }

@@ -5,6 +5,8 @@ import WebGLScrollContainer from "@/components/WebGLScroll/WebGLScrollContainer"
 
 //@ts-ignore
 import EFFECT_GL_FRAG from "@/components/WebGLScroll/WebGLScroll/shaders/EffectGL.frag";
+//@ts-ignore
+import EFFECT_GL_VERT from "@/components/WebGLScroll/WebGLScroll/shaders/EffectGL.vert";
 
 export default function Home() {
   return (
@@ -20,7 +22,11 @@ export default function Home() {
           </Plane>
         </div>
 
-        <Plane fragmentShader={EFFECT_GL_FRAG} className="h-fit w-fit">
+        <Plane
+          fragmentShader={EFFECT_GL_FRAG}
+          vertexShader={EFFECT_GL_VERT}
+          className="h-fit w-fit"
+        >
           <div className="p-24">fdsajfdksla</div>
         </Plane>
         <Plane className="h-fit w-fit">
