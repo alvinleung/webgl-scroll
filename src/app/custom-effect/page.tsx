@@ -15,18 +15,18 @@ export default function Home() {
 
   return (
     <WebGLScrollContainer>
-      <main className="py-24 w-full flex flex-col">
+      <main className="py-8 w-full flex flex-col">
         <Plane
           vertexShader={VERT}
           fragmentShader={FRAG}
           uniforms={{
             u_texture: texture1,
           }}
-          className="m-24 h-[60svh] flex flex-row items-center justify-end p-24"
+          className="m-4 h-[60svh] flex flex-row items-center justify-end p-4"
         >
           Full screen
         </Plane>
-        <div className="flex gap-2 w-full px-24">
+        <div className="flex gap-2 w-full px-4">
           <Plane
             vertexShader={VERT}
             fragmentShader={FRAG}
@@ -48,7 +48,7 @@ export default function Home() {
             Full screen
           </Plane>
         </div>
-        <Plane className="m-24 flex flex-row items-center h-[60svh] justify-end p-24">
+        <Plane className="m-4 flex flex-row items-center h-[60svh] justify-end p-24">
           Full screen
         </Plane>
       </main>
