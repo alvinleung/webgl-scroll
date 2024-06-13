@@ -3,6 +3,9 @@
 import Plane from "@/components/WebGLScroll/Plane";
 import WebGLScrollContainer from "@/components/WebGLScroll/WebGLScrollContainer";
 
+//@ts-ignore
+import EFFECT_GL_FRAG from "@/components/WebGLScroll/WebGLScroll/shaders/EffectGL.frag";
+
 export default function Home() {
   return (
     <WebGLScrollContainer>
@@ -17,11 +20,11 @@ export default function Home() {
           </Plane>
         </div>
 
-        <Plane className="h-fit w-fit">
+        <Plane fragmentShader={EFFECT_GL_FRAG} className="h-fit w-fit">
           <div className="p-24">fdsajfdksla</div>
         </Plane>
         <Plane className="h-fit w-fit">
-          <div className="p-24">fdsajfdk fdsasla</div>
+          <div className="p-48">fdsajfdk fdsasla</div>
         </Plane>
         <div className="flex flex-row items-end justify-end">
           <Plane className="h-fit w-fit p-8">Flex box right</Plane>

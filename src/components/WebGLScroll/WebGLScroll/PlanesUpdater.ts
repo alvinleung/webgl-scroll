@@ -1,8 +1,14 @@
-import { subscribe } from "valtio";
-import { Plane, ScrollItems } from "./VirtualScroll";
+import { snapshot, subscribe } from "valtio";
+import { ScrollItems } from "./VirtualScroll";
 import { CleanupProtocol } from "./utils/CleanupProtocol";
 import * as twgl from "twgl.js";
 import { deleteTwglBufferInfo } from "./utils/deleteTwglBufferInfo";
+import PlaneInfo from "./PlaneInfo";
+
+interface PlanesUpdaterConfig {
+  items: ScrollItems;
+  gl: WebGLRenderingContext;
+}
 
 /**
  * PlaneUpdater class acts as a glue between the valtio state
@@ -12,28 +18,29 @@ import { deleteTwglBufferInfo } from "./utils/deleteTwglBufferInfo";
 export class PlanesUpdater implements CleanupProtocol {
   private planesBufferInfo: twgl.BufferInfo[] = [];
   private unsubscribeScrollItems: Function;
+  private gl: WebGLRenderingContext;
 
-  constructor({
-    items,
-    gl,
-  }: {
-    items: ScrollItems;
-    gl: WebGLRenderingContext;
-  }) {
+  private _planes: PlaneInfo[] | undefined;
+
+  constructor({ items, gl }: PlanesUpdaterConfig) {
+    this.gl = gl;
     this.unsubscribeScrollItems = subscribe(
       items,
       (() => this.updatePlanesBuffer(gl, items)).bind(this)
     );
+
+    // trigger the initial update
+    this.updatePlanesBuffer(gl, items);
   }
 
   private updatePlanesBuffer(gl: WebGLRenderingContext, items: ScrollItems) {
     // cleanup previous
-    this.planesBufferInfo.forEach((bufferInfo) => {
-      deleteTwglBufferInfo(gl, bufferInfo);
-    });
+    this.cleanupPlaneBuffer();
 
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
+
+    this._planes = Object.values(items);
 
     this.planesBufferInfo = Object.values(items).map((plane, index) => {
       const { ndcX, ndcY, ndcWidth, ndcHeight } = this.mapToNDCTopLeft(
@@ -80,7 +87,7 @@ export class PlanesUpdater implements CleanupProtocol {
   }
 
   private mapToNDCTopLeft(
-    plane: Plane,
+    plane: PlaneInfo,
     screenWidth: number,
     screenHeight: number
   ) {
@@ -102,11 +109,23 @@ export class PlanesUpdater implements CleanupProtocol {
     };
   }
 
+  private cleanupPlaneBuffer() {
+    const gl = this.gl;
+    this.planesBufferInfo.forEach((bufferInfo) => {
+      deleteTwglBufferInfo(gl, bufferInfo);
+    });
+  }
+
   public getPlanesBufferInfo() {
     return this.planesBufferInfo;
   }
 
+  get planes() {
+    return this._planes;
+  }
+
   cleanup(): void {
+    this.cleanupPlaneBuffer();
     this.unsubscribeScrollItems();
   }
 }

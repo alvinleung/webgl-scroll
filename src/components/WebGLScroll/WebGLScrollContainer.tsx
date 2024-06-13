@@ -2,8 +2,11 @@
 
 import React, { RefObject, useEffect, useRef } from "react";
 import { useWindowSize } from "usehooks-ts";
-import { VirtualScrollProvider, useVirtualScroll } from "./VirtualScroll";
-import { WebGLScroll } from "./WebGLScroll";
+import {
+  VirtualScrollProvider,
+  useVirtualScroll,
+} from "./WebGLScroll/VirtualScroll";
+import { WebGLScroll } from "./WebGLScroll/WebGLScroll";
 
 const WebGLScrollContainer = ({ children }: React.PropsWithChildren) => {
   const scrollContentRef = useRef() as RefObject<HTMLDivElement>;

@@ -51,6 +51,9 @@ export class WebGLRenderer implements CleanupProtocol {
     const delta = currentFrameTime - this.lastFrameTime;
     this.lastFrameTime = currentFrameTime;
 
+    // Step 1 - Render webgl on the background canvas
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
     this.renderingDelegate.onRender({
       delta,
       elapsed: currentFrameTime,

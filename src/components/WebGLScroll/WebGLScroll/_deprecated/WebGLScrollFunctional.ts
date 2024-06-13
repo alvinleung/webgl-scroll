@@ -10,8 +10,9 @@ import EFFECT_FRAG from "./shaders/EffectGL.frag";
 //@ts-ignore
 import EFFECT_VERT from "./shaders/EffectGL.vert";
 
-import { Plane, ScrollItems, ScrollState } from "../VirtualScroll";
+import { ScrollItems, ScrollState } from "../VirtualScroll";
 import { subscribe } from "valtio";
+import PlaneInfo from "../PlaneInfo";
 
 let planesBufferInfo: twgl.BufferInfo[] = [];
 
@@ -43,7 +44,7 @@ export function createWebGLScroll({
     const windowHeight = window.innerHeight;
 
     function mapToNDCTopLeft(
-      plane: Plane,
+      plane: PlaneInfo,
       screenWidth: number,
       screenHeight: number
     ) {

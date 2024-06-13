@@ -11,19 +11,14 @@ import { proxy } from "valtio";
 import { useResizeObserver, useWindowSize } from "usehooks-ts";
 import { AnimatedValue } from "./AnimatedValue/AnimatedValue";
 import { useAnimatedValue } from "./AnimatedValue/useAnimatedValue";
+import PlaneInfo from "./PlaneInfo";
 
-export interface Plane {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 export interface ScrollState {
   current: number;
   target: number;
 }
 export interface ScrollItems {
-  [key: string]: Plane;
+  [key: string]: PlaneInfo;
 }
 
 const VirtualScrollContext = createContext({
